@@ -1,12 +1,12 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLACKBOX SANDBOX CHECK</title>
 <style>body{margin:0;background:#111;color:#a0a0a0;font:12px/1.5 ui-monospace,Menlo,monospace;padding:12px}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:8px}iframe{width:100%;aspect-ratio:1;border:0;background:#000}</style></head><body>
-<p>One BLACKBOX token (Hoodi testnet, REC 001 // 01) read live from the chain and shown in three locked-down frames, the way marketplaces embed animation_url. Each should show the curtain within about 20 seconds.</p>
+<p>One BLACKBOX token with the final scene (Hoodi testnet, REC 001 // 01, sealed) read live from the chain and shown in three locked-down frames, the way marketplaces embed animation_url. Each should show the curtain within about 20 seconds.</p>
 <div class="g"><div>1 DATA URL, SCRIPTS ONLY<iframe id="a" sandbox="allow-scripts"></iframe></div><div>2 INLINE, SCRIPTS ONLY<iframe id="b" sandbox="allow-scripts"></iframe></div><div>3 INLINE, SAME ORIGIN<iframe id="c" sandbox="allow-scripts allow-same-origin"></iframe></div></div>
 <p id="s">READING THE CHAIN...</p>
 <script>
 (async function(){ try{
  var data='0xc87b56dd'+(101).toString(16).padStart(64,'0');
- var r=await (await fetch('https://ethereum-hoodi-rpc.publicnode.com',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:'0x0236ea903992457E0336FBB9eae66a2E089b952C',data:data,gas:'0x3938700'},'latest']})})).json();
+ var r=await (await fetch('https://ethereum-hoodi-rpc.publicnode.com',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:'0xAf2CC6eA316B0a28032508026F44e121e5804207',data:data,gas:'0x3938700'},'latest']})})).json();
  var hex=r.result.slice(2), off=parseInt(hex.slice(0,64),16)*2, len=parseInt(hex.slice(off,off+64),16), bytes=new Uint8Array(len);
  for(var i=0;i<len;i++) bytes[i]=parseInt(hex.substr(off+64+i*2,2),16);
  var j=JSON.parse(atob(new TextDecoder().decode(bytes).split(',')[1])), anim=j.animation_url, html=new TextDecoder().decode(Uint8Array.from(atob(anim.split(',')[1]),function(c){return c.charCodeAt(0);}));
