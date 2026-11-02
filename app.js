@@ -116,7 +116,7 @@ function stateOf(r, now) {
   if (r.landedAt) return 'LANDED';
   if (now < r.windowOpen) return 'FILED SOON';
   if (now <= r.deadline) return 'IN FLIGHT';
-  return 'SEALED';
+  return 'LANDING';
 }
 function canMint(r, now) { return stateOf(r, now) === 'IN FLIGHT' && r.minted < r.cap; }
 
@@ -330,7 +330,7 @@ function infoHtml(r, st, now, owned, msg) {
   var h = '<div class="row"><span class="lbl">REC ' + p3(r.rec) + '</span><span class="st' + (st === 'IN FLIGHT' ? ' live' : '') + '">' + st + '</span></div>';
   if (st === 'FILED SOON') h += '<div class="kv"><span>WINDOW OPENS IN</span><span data-t="' + r.windowOpen + '">--</span></div>';
   if (st === 'IN FLIGHT') h += '<div class="kv"><span>WINDOW CLOSES IN</span><span data-t="' + r.deadline + '">--</span></div>';
-  if (st === 'SEALED') h += '<div class="kv"><span>WINDOW</span><span>CLOSED, AWAITING LANDING</span></div>';
+  if (st === 'LANDING') h += '<div class="kv"><span>WINDOW</span><span>CLOSED, AWAITING LANDING</span></div>';
   if (st !== 'LANDED') h += '<div class="kv"><span>HASH</span><span>' + esc(short(r.passHash)) + '</span></div><div class="kv"><span>ROUTE DATE SEAT</span><span>SEALED</span></div>';
   if (st === 'LANDED') {
     var d = (S.dossiers.get(r.rec) || '').split('|');
