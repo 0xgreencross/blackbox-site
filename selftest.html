@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLACKBOX SELFTEST</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app"></div>
+<div class="wrap"><h1>SELFTEST</h1><div class="dim">MOCK PROVIDER. 20 GENERATED TWEETS WITH COUNTED LENGTHS.</div><pre id="tweets" style="white-space:pre-wrap;text-transform:none;margin-top:12px"></pre></div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+(function () {
+  var CONTRACT = '0x00000000000000000000000000000000000000c0';
+  var ACC = '0x00000000000000000000000000000000000000a1';
+  var OTHER = '0x00000000000000000000000000000000000000b2';
+  window.BBCFG = { mainnet: { chainId: 1, contract: CONTRACT, rpc: 'http://invalid.local', explorer: 'https://etherscan.io' }, sepolia: { chainId: 11155111, contract: '', rpc: '', explorer: '' } };
+  var ABI = [
+    'function records(uint256) view returns (bytes32 passHash, uint64 windowOpen, uint64 deadline, uint64 landedAt, uint16 blockMinutes, uint16 cap, uint16 minted, uint128 price)',
+    'function recordCount() view returns (uint256)', 'function mint(uint256 rec) payable', 'function tokenURI(uint256) view returns (string)',
+    'function dossierOf(uint256) view returns (string)',
+    'function auction() view returns (uint64 start, uint64 end, uint128 reserve, uint128 highBid, address highBidder, bool settled)',
+    'function bid() payable', 'function ownerOf(uint256) view returns (address)',
+    'event Minted(uint256 indexed rec, uint256 tokenId, address to, uint16 index)'];
+  var iface = new ethers.Interface(ABI);
+  var now = Math.floor(Date.now() / 1000);
+  var H = '0x' + 'ab'.repeat(32);
+  var recs = {
+    1: { windowOpen: now - 7200, deadline: now - 3600, landedAt: now - 3500, cap: 5, minted: 3, price: ethers.parseEther('0.01') },
+    2: { windowOpen: now - 600, deadline: now + 3600, landedAt: 0, cap: 10, minted: 4, price: ethers.parseEther('0.0123') }
+  };
+  var owners = { 102: ACC };
+  var receipts = {}, polled = {};
+  window.MOCKSTATE = { recs: recs, sent: [] };
+  // tiny animated canvas page: a square that moves, 36 frame loop at 25 fps
+  var PAGE = '<!doctype html><body style="margin:0;background:#000"><canvas id="c" width="600" height="600" style="width:100%;height:100%"></canvas><script>var c=document.getElementById("c"),x=c.getContext("2d"),t0=performance.now();setInterval(function(){var f=Math.floor((performance.now()-t0)/40)%36;x.fillStyle="#000";x.fillRect(0,0,600,600);x.fillStyle="#fff";x.fillRect(f*14,250,100,100);},20);<\/script></body>';
+  function uri(id) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#000"/><rect x="3" y="3" width="2" height="2" fill="#555"/></svg>';
+    var j = { name: 'BLACKBOX #' + id, image: 'data:image/svg+xml;base64,' + btoa(svg), animation_url: 'data:text/html;base64,' + btoa(PAGE) };
+    return 'data:application/json;base64,' + btoa(JSON.stringify(j));
+  }
+  function res(name, vals) { return iface.encodeFunctionResult(name, vals); }
+  window.BBMOCK = {
+    on: function () { }, removeListener: function () { },
+    request: async function (q) {
+      var m = q.method, p = q.params || [];
+      if (m === 'eth_chainId') return '0x1';
+      if (m === 'eth_requestAccounts' || m === 'eth_accounts') return [ACC];
+      if (m === 'wallet_switchEthereumChain') return null;
+      if (m === 'eth_getBlockByNumber') return { timestamp: '0x' + Math.floor(Date.now() / 1000).toString(16) };
+      if (m === 'eth_call') {
+        var d = iface.parseTransaction({ data: p[0].data });
+        var a = d.args;
+        if (d.name === 'recordCount') return res('recordCount', [2n]);
+        if (d.name === 'records') { var r = recs[Number(a[0])]; return res('records', [H, r.windowOpen, r.deadline, r.landedAt, 90, r.cap, r.minted, r.price]); }
+        if (d.name === 'dossierOf') return res('dossierOf', [Number(a[0]) === 1 ? 'LHR|JFK|2026-11-04|23A|470|5540|A350' : '']);
+        if (d.name === 'auction') return res('auction', [now - 100, now + 7200, ethers.parseEther('0.5'), ethers.parseEther('0.6'), OTHER, false]);
+        if (d.name === 'ownerOf') return res('ownerOf', [owners[Number(a[0])] || OTHER]);
+        if (d.name === 'tokenURI') return res('tokenURI', [uri(Number(a[0]))]);
+      }
+      if (m === 'eth_sendTransaction') {
+        var tx = p[0], dd = iface.parseTransaction({ data: tx.data });
+        window.MOCKSTATE.sent.push({ to: tx.to, value: tx.value, name: dd.name, rec: Number(dd.args[0] || 0) });
+        if (dd.name === 'mint') {
+          var rec = Number(dd.args[0]), r2 = recs[rec];
+          if (BigInt(tx.value) !== r2.price) throw new Error('bad price');
+          r2.minted++;
+          var tokenId = rec * 100 + r2.minted; owners[tokenId] = ACC;
+          var hash = '0x' + (Object.keys(receipts).length + 1).toString(16).padStart(64, '0');
+          var ev = iface.getEvent('Minted');
+          var lg = iface.encodeEventLog(ev, [rec, tokenId, ACC, r2.minted]);
+          receipts[hash] = { status: '0x1', logs: [{ address: CONTRACT, topics: lg.topics, data: lg.data }] };
+          return hash;
+        }
+        return '0x' + '11'.repeat(32);
+      }
+      if (m === 'eth_getTransactionReceipt') {
+        if (!polled[p[0]]) { polled[p[0]] = 1; return null; }
+        return receipts[p[0]] || { status: '0x1', logs: [] };
+      }
+      throw new Error('mock: unhandled ' + m);
+    }
+  };
+})();
+</script>
+<script src="app.js"></script>
+<script>
+(function () {
+  var seen = new Set(), lines = [], i;
+  for (i = 0; i < 20; i++) {
+    var t = BB.tweet({ rec: 1, index: 3, open: i % 2 === 0 }, seen);
+    lines.push((i + 1) + ' [' + t.len + '] ' + t.text);
+  }
+  document.getElementById('tweets').textContent = lines.join('\n\n');
+})();
+</script>
+</body>
+</html>

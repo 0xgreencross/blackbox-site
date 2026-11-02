@@ -2,14 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DITHERVOID // BLACKBOX</title>
-<style>
-  html,body{margin:0;height:100%;background:#000;color:#9a9a9a;font:14px/1.6 ui-monospace,Menlo,monospace}
-  main{min-height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
-</style>
+<meta name="description" content="Every flight writes a record on Ethereum. Editions can be collected only while the plane is in the air.">
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="DITHERVOID // BLACKBOX">
+<meta property="og:description" content="Every flight writes a record on Ethereum. Editions can be collected only while the plane is in the air.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main><div>DITHERVOID // BLACKBOX<br>RECORDER NOT YET ARMED</div></main>
+<div id="app"></div>
+<noscript>JAVASCRIPT REQUIRED</noscript>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
